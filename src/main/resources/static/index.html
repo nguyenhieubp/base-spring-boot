@@ -1,0 +1,206 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Global Chat</title>-->
+<!--    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>-->
+<!--    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>-->
+<!--    <style>-->
+<!--        /* Thêm một chút style cho các nút và danh sách tin nhắn */-->
+<!--        #options {-->
+<!--            margin-bottom: 10px;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<h2>Global Chat</h2>-->
+<!--<ul id="messages"></ul>-->
+<!--<form id="form" action="">-->
+<!--    <input id="input" autocomplete="off" placeholder="Enter your global message..." />-->
+<!--    <button>Send</button>-->
+<!--</form>-->
+
+<!--<script>-->
+<!--    const socket = new SockJS('/chat');-->
+<!--    const stompClient = Stomp.over(socket, { debug: false });-->
+
+<!--    stompClient.connect({}, function (frame) {-->
+<!--        stompClient.subscribe('/topic/messages', function (message) {-->
+<!--            const item = document.createElement('li');-->
+<!--            item.textContent = message.body; // Nhận và hiển thị tin nhắn toàn cầu-->
+<!--            document.getElementById('messages').appendChild(item);-->
+<!--        });-->
+<!--    });-->
+
+<!--    const form = document.getElementById('form');-->
+<!--    const input = document.getElementById('input');-->
+
+<!--    form.addEventListener('submit', function(e) {-->
+<!--        e.preventDefault();-->
+<!--        if (input.value) {-->
+<!--            stompClient.send("/app/chat.sendMessage", {}, input.value); // Gửi tin nhắn toàn cầu-->
+<!--            input.value = ''; // Reset giá trị input-->
+<!--        }-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+    <style>
+        /* Thêm một chút style cho các nút và danh sách tin nhắn */
+        #options {
+            margin-bottom: 10px;
+        }
+        #messageInput {
+            display: none; /* Ẩn input nhập tin nhắn ban đầu */
+        }
+    </style>
+</head>
+<body>
+<h2>Room Chat</h2>
+<input id="roomInput" autocomplete="off" placeholder="Enter room ID..." />
+<button id="joinRoomBtn">Join Room</button>
+<button id="leaveRoomBtn" style="display: none;">Leave Room</button> <!-- Nút Rời Phòng -->
+<ul id="messages"></ul>
+<form id="form" action="" style="display: none;"> <!-- Ẩn form ban đầu -->
+    <input id="input" autocomplete="off" placeholder="Enter your room message..." />
+    <button>Send</button>
+</form>
+
+<script>
+    const socket = new SockJS('/chat');
+    const stompClient = Stomp.over(socket, { debug: false });
+    let currentRoomId = ""; // Biến để lưu ID phòng hiện tại
+    let currentSubscription; // Biến để lưu subscription hiện tại
+
+    // Hàm để kết nối và lắng nghe tin nhắn từ một phòng
+    function connectToRoom(roomId) {
+        // Ngắt kết nối khỏi phòng cũ
+        if (currentSubscription) {
+            currentSubscription.unsubscribe();
+        }
+
+        currentRoomId = roomId; // Cập nhật ID phòng hiện tại
+
+        // Đăng ký lắng nghe tin nhắn từ phòng mới
+        currentSubscription = stompClient.subscribe(`/topic/room/${currentRoomId}`, function (message) {
+            const item = document.createElement('li');
+            item.textContent = message.body; // Nhận và hiển thị tin nhắn từ phòng
+            document.getElementById('messages').appendChild(item);
+        });
+
+        // Hiện thị form và nút Rời Phòng
+        document.getElementById('form').style.display = "block";
+        document.getElementById('leaveRoomBtn').style.display = "inline";
+        document.getElementById('roomInput').style.display = "none"; // Ẩn input Room ID
+        document.getElementById('joinRoomBtn').style.display = "none"; // Ẩn nút Join Room
+    }
+
+    document.getElementById('joinRoomBtn').addEventListener('click', function() {
+        const roomId = document.getElementById('roomInput').value; // Lấy ID phòng từ input
+        if (roomId) {
+            connectToRoom(roomId); // Kết nối đến phòng
+        } else {
+            alert("Please enter a room ID."); // Thông báo nếu ID phòng không hợp lệ
+        }
+    });
+
+    document.getElementById('leaveRoomBtn').addEventListener('click', function() {
+        // Hủy đăng ký từ phòng hiện tại
+        if (currentSubscription) {
+            currentSubscription.unsubscribe();
+            currentSubscription = null; // Đặt lại subscription
+        }
+        currentRoomId = ""; // Xóa ID phòng hiện tại
+
+        // Ẩn form và nút Rời Phòng
+        document.getElementById('form').style.display = "none"; // Ẩn form
+        document.getElementById('leaveRoomBtn').style.display = "none"; // Ẩn nút Rời Phòng
+        document.getElementById('roomInput').style.display = "inline"; // Hiện input Room ID
+        document.getElementById('joinRoomBtn').style.display = "inline"; // Hiện nút Join Room
+        document.getElementById('messages').innerHTML = ""; // Xóa tin nhắn
+    });
+
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (input.value) {
+            const chatMessage = {
+                content: input.value,
+                roomId: currentRoomId
+            };
+            stompClient.send("/app/chat.sendMessageToRoom", {}, JSON.stringify(chatMessage)); // Gửi tin nhắn đến phòng
+            input.value = ''; // Reset giá trị input
+        } else {
+            alert("Please enter a message."); // Thông báo nếu không có tin nhắn
+        }
+    });
+
+    // Kết nối khi tải trang lần đầu
+    stompClient.connect({}, function (frame) {
+        console.log('Connected: ' + frame);
+    });
+</script>
+</body>
+</html>
